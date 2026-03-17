@@ -33,6 +33,7 @@ public class Home extends JPanel implements MouseListener, MouseMotionListener{
 	Rectangle home_button;
     FontMetrics metrics;
 
+    STL_file_minipulation stl_min = new STL_file_minipulation();
 	
 	public Home(JFrame frame) {
 		this.frame = frame;
@@ -121,6 +122,7 @@ public class Home extends JPanel implements MouseListener, MouseMotionListener{
 	                file.createNewFile();
 
 	                System.out.println("LOADED to: " + file.getAbsolutePath());
+	                stl_min.stl_get(file);
 	            }
 
 	        } catch (Exception ex) {
