@@ -35,9 +35,8 @@ public class Home extends JPanel implements MouseListener, MouseMotionListener {
     FontMetrics metrics;
     STL_file_minipulation stl_min = new STL_file_minipulation(this);
 
-    // --- rotation state ---
-    double rotX = 0.4;   // pitch (up/down) in radians — nice starting angle
-    double rotY = 0.6;   // yaw   (left/right) in radians
+    double rotX = 0.4;  
+    double rotY = 0.6;  
     int dragLastX, dragLastY;
     boolean dragging = false;
 
@@ -57,15 +56,13 @@ public class Home extends JPanel implements MouseListener, MouseMotionListener {
         frame.addMouseListener(this);
     }
 
-    /** Called by STL_file_minipulation once parsing + sorting is complete. */
+
     public void onMeshReady() {
         home_screen = false;
         repaint();
     }
 
-    // -------------------------------------------------------------------------
-    //  Home screen
-    // -------------------------------------------------------------------------
+
     public void HOME() {
         g2.setColor(Color.BLACK);
         g2.setFont(font20);
@@ -83,22 +80,18 @@ public class Home extends JPanel implements MouseListener, MouseMotionListener {
         g2.draw(home_button);
     }
 
-    // -------------------------------------------------------------------------
-    //  3-D mesh draw with drag-to-rotate
-    // -------------------------------------------------------------------------
+
     public void MESH() {
-        // stl_min exposes raw float coords as rawVertices (float[N][3], one row per vertex)
+    	
         float[][] raw = stl_min.rawVertices;
         if (raw == null || raw.length < 3) return;
 
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // --- 1. centroid so we rotate around the model centre ---
         double cx = 0, cy = 0, cz = 0;
         for (float[] v : raw) { cx += v[0]; cy += v[1]; cz += v[2]; }
         cx /= raw.length; cy /= raw.length; cz /= raw.length;
 
-        // --- 2. apply rotation matrix to every vertex ---
         double sinY = Math.sin(rotY), cosY = Math.cos(rotY);
         double sinX = Math.sin(rotX), cosX = Math.cos(rotX);
 
@@ -109,12 +102,10 @@ public class Home extends JPanel implements MouseListener, MouseMotionListener {
             double y = raw[i][1] - cy;
             double z = raw[i][2] - cz;
 
-            // rotate around Y axis (yaw — left/right drag)
             double x1 =  x * cosY + z * sinY;
             double y1 =  y;
             double z1 = -x * sinY + z * cosY;
 
-            // rotate around X axis (pitch — up/down drag)
             double x2 = x1;
             double y2 = y1 * cosX - z1 * sinX;
             double z2 = y1 * sinX + z1 * cosX;
@@ -126,8 +117,6 @@ public class Home extends JPanel implements MouseListener, MouseMotionListener {
             double r = Math.sqrt(x2 * x2 + y2 * y2);
             if (r > maxR) maxR = r;
         }
-
-        // --- 3. scale to fit panel ---
         int padding = 40;
         double available = Math.min(getWidth(), getHeight()) / 2.0 - padding;
         double scale = (maxR == 0) ? 1.0 : available / maxR;
@@ -135,7 +124,6 @@ public class Home extends JPanel implements MouseListener, MouseMotionListener {
         int cx2d = getWidth()  / 2;
         int cy2d = getHeight() / 2;
 
-        // --- 4. build triangle list; painter's sort (back → front) by avg Z ---
         int triCount = raw.length / 3;
         ArrayList<int[]> tris = new ArrayList<>(triCount);
 
@@ -144,7 +132,7 @@ public class Home extends JPanel implements MouseListener, MouseMotionListener {
             double[] p0 = rot[b], p1 = rot[b + 1], p2 = rot[b + 2];
 
             int sx0 = cx2d + (int)(p0[0] * scale);
-            int sy0 = cy2d - (int)(p0[1] * scale);   // flip Y so +Y is up
+            int sy0 = cy2d - (int)(p0[1] * scale); 
             int sx1 = cx2d + (int)(p1[0] * scale);
             int sy1 = cy2d - (int)(p1[1] * scale);
             int sx2 = cx2d + (int)(p2[0] * scale);
@@ -154,10 +142,8 @@ public class Home extends JPanel implements MouseListener, MouseMotionListener {
             tris.add(new int[]{sx0, sy0, sx1, sy1, sx2, sy2, avgZ});
         }
 
-        // smallest Z = furthest back → draw first
         tris.sort(Comparator.comparingInt(a -> a[6]));
 
-        // --- 5. draw back-to-front with simple Z shading ---
         for (int[] tri : tris) {
             int[] xs = {tri[0], tri[2], tri[4]};
             int[] ys = {tri[1], tri[3], tri[5]};
@@ -177,26 +163,25 @@ public class Home extends JPanel implements MouseListener, MouseMotionListener {
         }
     }
 
-    // -------------------------------------------------------------------------
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
         this.g2 = g2;
-        if (home_screen) HOME();
-        else             MESH();
+        if (home_screen) 
+        	HOME();
+        else
+        	MESH();
     }
 
-    // -------------------------------------------------------------------------
-    //  Mouse handlers
-    // -------------------------------------------------------------------------
+
     @Override
     public void mouseDragged(MouseEvent e) {
         if (!home_screen && dragging) {
             int dx = e.getX() - dragLastX;
             int dy = e.getY() - dragLastY;
-            rotY += dx * 0.01;   // horizontal drag → yaw
-            rotX += dy * 0.01;   // vertical   drag → pitch
+            rotY += dx * 0.01;  
+            rotX += dy * 0.01;
             dragLastX = e.getX();
             dragLastY = e.getY();
             repaint();
@@ -222,22 +207,24 @@ public class Home extends JPanel implements MouseListener, MouseMotionListener {
             dragLastY = e.getY();
         }
 
-        if (home_button != null && home_button.contains(e.getPoint())) {
-            try {
-                FileDialog dialog = new FileDialog((Frame) null, "Open an STL File", FileDialog.LOAD);
-                dialog.setFile("*.stl");
-                dialog.setVisible(true);
-                String directory = dialog.getDirectory();
-                String fileName  = dialog.getFile();
-                if (fileName != null) {
-                    if (!fileName.toLowerCase().endsWith(".stl")) fileName += ".stl";
-                    File file = new File(directory, fileName);
-                    System.out.println("LOADED: " + file.getAbsolutePath());
-                    stl_min.stl_get(file);
-                }
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
+        else {
+        	if (home_button != null && home_button.contains(e.getPoint())) {
+        		try {
+        			FileDialog dialog = new FileDialog((Frame) null, "Open an STL File", FileDialog.LOAD);
+        			dialog.setFile("*.stl");
+        			dialog.setVisible(true);
+        			String directory = dialog.getDirectory();
+        			String fileName  = dialog.getFile();
+        			if (fileName != null) {
+        				if (!fileName.toLowerCase().endsWith(".stl")) fileName += ".stl";
+        				File file = new File(directory, fileName);
+        				System.out.println("LOADED: " + file.getAbsolutePath());
+        				stl_min.stl_get(file);
+        			}
+        		} catch (Exception ex) {
+        			ex.printStackTrace();
+        		}
+        	}
         }
     }
 
