@@ -40,7 +40,7 @@ public class STL_file_minipulation {
         } else {
             parseASCIIStreaming(stl_given); // single-pass, no Lines[] array
         }
-
+        System.out.println("vertices: " + vertices.size());
         home.onMeshReady();
     }
 
